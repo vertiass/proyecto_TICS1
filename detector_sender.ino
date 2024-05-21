@@ -5,9 +5,7 @@
 #define SOUND_SENSOR_PIN 34
 
 // Define the MAC address of the receiver ESP32
-uint8_t receiverAddress[] = {0xA0, 0xB7, 0x65, 0xDC, 0x14, 0x94};
-
-String success;
+uint8_t broadcastAddress[] = {0xA0, 0xB7, 0x65, 0xDC, 0x14, 0x94};
 
 typedef struct struct_message {
   float voltage;
@@ -21,37 +19,27 @@ struct_message myData;
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-  if(status == 0) {
-    success = "Delivery Success";
-  } else {
-    success = "Delivery Failed";
-  }
 }
 
 void setup() {
   Serial.begin(115200);
-  // Initialize the pin as input
+
   pinMode(SOUND_SENSOR_PIN, INPUT);
 
-  // Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
 
-  // Initialize ESP-NOW
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
   }
 
-  // Register the send callback
   esp_now_register_send_cb(OnDataSent);
 
-  // Register the peer
-  esp_now_peer_info_t peerInfo;
-  memcpy(peerInfo.peer_addr, receiverAddress, 6);
-  peerInfo.channel = 0;  
+  esp_now_peer_info_t peerInfo = {};
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 0;
   peerInfo.encrypt = false;
 
-  // Add peer
   if (esp_now_add_peer(&peerInfo) != ESP_OK) {
     Serial.println("Failed to add peer");
     return;
@@ -59,23 +47,22 @@ void setup() {
 }
 
 void loop() {
-  // Read the analog value from the sound sensor
+  // Leer el valor analogo desde el sensor de sonido
   int sensorValue = analogRead(SOUND_SENSOR_PIN);
 
-  // Convert the analog value to voltage
+  // Convertir el valor analogo a voltaje
   float voltage = sensorValue * (3.3 / 4095.0);
 
-  // Convert the voltage to decibels (dB)
-  float dB = 20 * log10(voltage / 0.00631); // 0.00631 is a reference voltage value, needs calibration
+  // Convertir el voltaje a decibeles
+  float dB = 20 * log10(voltage / 0.00631); // 0.00631 es un valor de voltaje de referencia, necesita calibracion
 
   Serial.println(dB);
 
-  // Prepare the data to send
   myData.voltage = voltage;
   myData.dB = dB;
 
-  // Send message via ESP-NOW
-  esp_err_t result = esp_now_send(receiverAddress, (uint8_t *) &myData, sizeof(myData));
+  // Enviar los datos mediante protocolo ESP-NOW
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &myData, sizeof(myData));
 
   if (result == ESP_OK) {
     Serial.println("Sent with success");
@@ -83,6 +70,5 @@ void loop() {
     Serial.println("Error sending the data");
   }
 
-  // Small delay to slow down the reading
   delay(250);
 }
