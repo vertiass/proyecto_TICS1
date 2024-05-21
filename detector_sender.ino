@@ -1,10 +1,8 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-// Define the analog pin where KY-037 AO is connected
 #define SOUND_SENSOR_PIN 34
 
-// Define the MAC address of the receiver ESP32
 uint8_t broadcastAddress[] = {0xA0, 0xB7, 0x65, 0xDC, 0x14, 0x94};
 
 typedef struct struct_message {
@@ -12,10 +10,8 @@ typedef struct struct_message {
   float dB;
 } struct_message;
 
-// Create a struct_message called myData
 struct_message myData;
 
-// Callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
